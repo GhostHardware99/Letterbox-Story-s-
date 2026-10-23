@@ -47,8 +47,8 @@ h3{font-size:13px;color:#9a9a9a;margin:18px 2px 8px;font-weight:500}
 <nav class="bar"><button id="sv">Guardar imagen</button><button id="sh" class="p">Compartir</button></nav>
 <section id="ps"><header><button id="bk">‹ Atrás</button><h1>Ajustes</h1></header><div class="in">
 <h3>Letterboxd</h3><div class="g"><label><span>Tu usuario</span><input id="u" placeholder="usuario" autocapitalize="none"></label></div>
-<h3>Conexiones</h3><div class="g"><label><span>Clave de TMDB</span><input id="k" placeholder="Pega tu clave"></label><label><span>URL del Worker</span><input id="w" placeholder="https://…workers.dev"></label></div>
-<p class="n">El Worker lee Letterboxd y TMDB por ti.</p>
+<h3>Conexiones</h3><div class="g"><label><span>Clave de TMDB (opcional)</span><input id="k" placeholder="Solo para buscar por nombre"></label><label><span>URL del Worker (para enlaces)</span><input id="w" placeholder="https://…workers.dev"></label></div>
+<p class="n">El Worker lee Letterboxd y TMDB por ti.</p><p class="n">Versión 7</p>
 <h3>Color de la app</h3><div class="r" id="cc"></div>
 <div class="sb" style="margin-top:22px"><button id="sa" style="flex:1;padding:14px">Guardar ajustes</button></div>
 </div></section>
@@ -59,13 +59,19 @@ let S=JSON.parse(localStorage.s||'{}'),F={rating:0},on={dir:1,yr:1,run:1,gen:1,d
 const TH=[['Oscuro','#14181c','#fff','#9ab','#00e054','#1f2830'],['Crema','#f4efe6','#2b2b2b','#6b6254','#b45309','#fbf3df'],['Azul','#1f2a44','#fff','#9fb0d0','#f5c26b','#2a3a5c'],['Rojo','#2a1216','#fff','#c9a0a6','#ff6b6b','#3a1a20']];
 const DN=['Póster','Minimal','Ticket','Reseña','Nota grande','Cine','Polaroid'];
 const FK=[['dir','Director'],['yr','Año'],['run','Duración'],['gen','Géneros'],['cast','Reparto'],['tag','Eslogan'],['date','Fecha'],['rewatch','Revisionado'],['review','Reseña'],['user','Usuario']];
-const P=u=>S.w+'?url='+encodeURIComponent(u),gj=async u=>(await fetch(P(u))).json();
-const T=p=>{if(!S.k)throw'Añade tu clave de TMDB en Ajustes';return gj('https://api.themoviedb.org/3'+p+(p.includes('?')?'&':'?')+'api_key='+S.k+'&language=es-ES')};
+const P=u=>S.w?S.w+'?url='+encodeURIComponent(u):u,gj=async u=>{const r=await fetch(P(u)),t=await r.text();try{return JSON.parse(t)}catch{throw'TMDB respondió '+r.status+': '+t.slice(0,60).replace(/\s+/g,' ')}};
+const T=p=>{if(!S.k)throw'Para buscar por nombre hace falta la clave de TMDB. Pega un enlace de Letterboxd.';return gj('https://api.themoviedb.org/3'+p+(p.includes('?')?'&':'?')+'api_key='+S.k+'&language=es-ES')};
 const img=async u=>createImageBitmap(await(await fetch(P(u))).blob());
 async function det(id){const d=await T('/movie/'+id+'?append_to_response=credits');
 Object.assign(F,{title:d.title,year:(d.release_date||'').slice(0,4),run:d.runtime||'',tag:d.tagline||'',gen:d.genres.slice(0,3).map(g=>g.name).join(' · '),dir:d.credits.crew.filter(x=>x.job=='Director').map(x=>x.name).join(', '),cast:d.credits.cast.slice(0,3).map(x=>x.name).join(', ')});
 if(d.poster_path)F.poster=await img('https://image.tmdb.org/t/p/w780'+d.poster_path)}
+async function lbpage(slug){const h=new DOMParser().parseFromString(await(await fetch(P('https://letterboxd.com/film/'+slug+'/'))).text(),'text/html');
+let j={};try{j=JSON.parse(h.querySelector('script[type="application/ld+json"]').textContent.replace(/\/\*[\s\S]*?\*\//g,''))}catch{}
+const n=a=>(a||[]).map(x=>x.name),rt=(h.body.textContent.match(/(\d+)\s*mins?\b/)||[])[1];
+Object.assign(F,{title:F.title||j.name||'',year:F.year||(j.releasedEvent?.[0]?.startDate||'').slice(0,4),dir:n(j.director).join(', '),gen:(j.genre||[]).slice(0,3).join(' · '),cast:n(j.actors).slice(0,3).join(', '),run:rt||'',tag:h.querySelector('.tagline')?.textContent.trim()||''});
+if(!F.poster&&j.image)try{F.poster=await img(j.image)}catch{}}
 async function link(u){
+if(!S.w)throw'Los enlaces de Letterboxd necesitan el Worker. Escribe el nombre de la película o crea el Worker.';
 if(/boxd\.it/.test(u))u=(await fetch(P(u))).headers.get('x-final-url')||u;
 const m=u.match(/film\/([^\/?#]+)/);if(!m)throw'Enlace no válido';
 F={rating:0,user:S.user};let id,it;
@@ -76,12 +82,14 @@ const h=new DOMParser().parseFromString(g('description'),'text/html');
 Object.assign(F,{rating:+g('letterboxd:memberRating'),date:g('letterboxd:watchedDate'),re:g('letterboxd:rewatch')=='Yes',title:g('letterboxd:filmTitle'),year:g('letterboxd:filmYear'),review:[...h.querySelectorAll('p')].map(p=>p.textContent.trim()).filter(t=>t&&!/^Watched on/.test(t)).join(' ')});
 id=g('tmdb:movieId');const s=h.querySelector('img')?.src;if(s)try{F.poster=await img(s)}catch{}}
 else $('#msg').dataset.n='No está en tu actividad reciente: pon la nota a mano.';
-if(S.k){if(!id)id=(await T('/search/movie?query='+encodeURIComponent(m[1].replace(/-/g,' ')))).results?.[0]?.id;if(id)await det(id)}}
+try{await lbpage(m[1])}catch{}
+if(S.k)try{if(!id)id=(await T('/search/movie?query='+encodeURIComponent(m[1].replace(/-/g,' ')))).results?.[0]?.id;if(id)await det(id)}catch{}
+if(!F.title)throw'No pude leer esa película. Revisa la URL del Worker y tu usuario.'}
 async function find(q){const r=(await T('/search/movie?query='+encodeURIComponent(q))).results.slice(0,6);
 r.forEach(m=>{const b=document.createElement('button');b.textContent=m.title+' ('+(m.release_date||'').slice(0,4)+')';
 b.onclick=async()=>{$('#res').innerHTML='';F={rating:0,user:S.user};await det(m.id);ui();draw()};$('#res').append(b)})}
 $('#go').onclick=async()=>{const q=$('#q').value.trim();if(!q)return;$('#msg').dataset.n='';$('#msg').textContent='Cargando…';$('#res').innerHTML='';
-try{if(!S.w)throw'Añade la URL del Worker en Ajustes';
+try{
 if(/^https?:|boxd\.it/.test(q)){await link(q);ui();draw()}else await find(q);$('#msg').textContent=$('#msg').dataset.n||''}
 catch(e){$('#msg').textContent='Error: '+e}};
 function chips(id,arr,get,set){const e=$(id);e.innerHTML='';arr.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.className=get(i)?'on':'';b.onclick=()=>{set(i);chips(id,arr,get,set);draw()};e.append(b)})}
@@ -127,7 +135,7 @@ addEventListener('popstate',closeS);$('#gs').onclick=openS;$('#bk').onclick=back
 const AC=[['Gris','#0b0b0b','#2b2d30','#e6e6e6'],['Verde','#06120b','#17382a','#4ade80'],['Azul','#070d1a','#1b2f55','#60a5fa'],['Rojo','#140808','#4a1c22','#f87171']];
 const applyC=()=>{const a=AC[S.c||0],r=document.documentElement.style;r.setProperty('--b1',a[1]);r.setProperty('--b2',a[2]);r.setProperty('--ac',a[3]);document.querySelector('meta[name=theme-color]').content=a[1]};
 applyC();chips('#cc',AC.map(a=>a[0]),i=>(S.c||0)==i,i=>{S.c=i;localStorage.s=JSON.stringify(S);applyC()});
-$('#u').value=S.user||'';$('#k').value=S.k||'';$('#w').value=S.w||'';if(!S.w)openS();
+$('#u').value=S.user||'';$('#k').value=S.k||'';$('#w').value=S.w||'';if(!S.w&&!S.k)openS();
 F.user=S.user;ui();draw();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
 </script></body></html>
