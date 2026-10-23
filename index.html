@@ -48,7 +48,7 @@ h3{font-size:13px;color:#9a9a9a;margin:18px 2px 8px;font-weight:500}
 <section id="ps"><header><button id="bk">‹ Atrás</button><h1>Ajustes</h1></header><div class="in">
 <h3>Letterboxd</h3><div class="g"><label><span>Tu usuario</span><input id="u" placeholder="usuario" autocapitalize="none"></label></div>
 <h3>Conexiones</h3><div class="g"><label><span>Clave de TMDB (opcional)</span><input id="k" placeholder="Solo para buscar por nombre"></label><label><span>URL del Worker (para enlaces)</span><input id="w" placeholder="https://…workers.dev"></label></div>
-<p class="n">El Worker lee Letterboxd y TMDB por ti.</p><p class="n">Versión 7</p>
+<p class="n">El Worker lee Letterboxd y TMDB por ti.</p><p class="n">Versión 8</p>
 <h3>Color de la app</h3><div class="r" id="cc"></div>
 <div class="sb" style="margin-top:22px"><button id="sa" style="flex:1;padding:14px">Guardar ajustes</button></div>
 </div></section>
@@ -74,20 +74,25 @@ async function link(u){
 if(!S.w)throw'Los enlaces de Letterboxd necesitan el Worker. Escribe el nombre de la película o crea el Worker.';
 if(/boxd\.it/.test(u))u=(await fetch(P(u))).headers.get('x-final-url')||u;
 const m=u.match(/film\/([^\/?#]+)/);if(!m)throw'Enlace no válido';
-F={rating:0,user:S.user};let id,it;
+F={rating:0,user:S.user};let id,it;$('#msg').dataset.n='Película: '+m[1]+'. ';
 if(S.user){const x=new DOMParser().parseFromString(await(await fetch(P('https://letterboxd.com/'+S.user+'/rss/'))).text(),'text/xml');
 it=[...x.querySelectorAll('item')].find(i=>(i.querySelector('link')?.textContent||'').includes('/film/'+m[1]+'/'))}
 if(it){const g=n=>it.getElementsByTagName(n)[0]?.textContent||'';
 const h=new DOMParser().parseFromString(g('description'),'text/html');
 Object.assign(F,{rating:+g('letterboxd:memberRating'),date:g('letterboxd:watchedDate'),re:g('letterboxd:rewatch')=='Yes',title:g('letterboxd:filmTitle'),year:g('letterboxd:filmYear'),review:[...h.querySelectorAll('p')].map(p=>p.textContent.trim()).filter(t=>t&&!/^Watched on/.test(t)).join(' ')});
 id=g('tmdb:movieId');const s=h.querySelector('img')?.src;if(s)try{F.poster=await img(s)}catch{}}
-else $('#msg').dataset.n='No está en tu actividad reciente: pon la nota a mano.';
+else $('#msg').dataset.n+='No está en tu actividad reciente: pon la nota a mano.';
 try{await lbpage(m[1])}catch{}
 if(S.k)try{if(!id)id=(await T('/search/movie?query='+encodeURIComponent(m[1].replace(/-/g,' ')))).results?.[0]?.id;if(id)await det(id)}catch{}
 if(!F.title)throw'No pude leer esa película. Revisa la URL del Worker y tu usuario.'}
-async function find(q){const r=(await T('/search/movie?query='+encodeURIComponent(q))).results.slice(0,6);
-r.forEach(m=>{const b=document.createElement('button');b.textContent=m.title+' ('+(m.release_date||'').slice(0,4)+')';
-b.onclick=async()=>{$('#res').innerHTML='';F={rating:0,user:S.user};await det(m.id);ui();draw()};$('#res').append(b)})}
+async function find(q){
+if(!S.w)throw'Para buscar por nombre hace falta el Worker. Añade su URL en Ajustes.';
+const h=new DOMParser().parseFromString(await(await fetch(P('https://letterboxd.com/search/films/'+encodeURIComponent(q)+'/'))).text(),'text/html'),o=new Map();
+h.querySelectorAll('a[href^="/film/"],[data-item-link^="/film/"]').forEach(e=>{const m=(e.getAttribute('href')||e.dataset.itemLink).match(/^\/film\/([^\/]+)\/?$/);if(!m)return;
+const t=e.dataset.itemName||e.textContent.trim()||e.querySelector('img')?.alt||'';if(!o.has(m[1])||(t&&!o.get(m[1])))o.set(m[1],t)});
+if(!o.size)throw'No encontré resultados. Prueba con otro nombre o pega el enlace.';
+[...o].slice(0,8).forEach(([sl,t])=>{const b=document.createElement('button');b.textContent=t||sl.replace(/-/g,' ');
+b.onclick=()=>{$('#res').innerHTML='';$('#q').value='https://letterboxd.com/film/'+sl+'/';$('#go').click()};$('#res').append(b)})}
 $('#go').onclick=async()=>{const q=$('#q').value.trim();if(!q)return;$('#msg').dataset.n='';$('#msg').textContent='Cargando…';$('#res').innerHTML='';
 try{
 if(/^https?:|boxd\.it/.test(q)){await link(q);ui();draw()}else await find(q);$('#msg').textContent=$('#msg').dataset.n||''}
