@@ -1,0 +1,133 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Letterboxd S</title><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-512.png"><meta name="theme-color" content="#0b0b0b"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Letterboxd S"><style>
+:root{--b1:#0b0b0b;--b2:#2b2d30;--ac:#e6e6e6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}[hidden]{display:none!important}
+body{margin:0;background:linear-gradient(180deg,var(--b1),var(--b2)) fixed;color:#eee;font:15px system-ui,sans-serif;min-height:100vh}
+header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top) + 14px) 16px 22px;background:linear-gradient(var(--b1) 60%,transparent)}
+h1{margin:0;font-size:18px;font-weight:600}
+header button{position:absolute;right:12px;top:calc(env(safe-area-inset-top) + 8px)}
+#bk{left:12px;right:auto}
+main{max-width:520px;margin:auto;padding:0 16px 110px}
+input,button{font:inherit;color:#eee;border:0;border-radius:12px;background:rgba(255,255,255,.08);padding:11px 14px}
+input{width:100%}
+button.on,button.p{background:var(--ac);color:#111;font-weight:600}
+.sb{display:flex;gap:8px}.sb button{background:var(--ac);color:#111;font-weight:600}
+#msg{color:#f5c26b;min-height:20px;margin:8px 2px;font-size:13px}
+#res button{display:block;width:100%;text-align:left;margin:0;border-radius:0;background:none;border-bottom:1px solid rgba(255,255,255,.1)}
+h3{font-size:13px;color:#9a9a9a;margin:18px 2px 8px;font-weight:500}
+.r{display:flex;gap:8px;flex-wrap:wrap}.r button{padding:8px 14px;font-size:14px}
+.sc{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.sc button{flex-shrink:0}
+#mv{display:flex;gap:14px;margin-top:10px;padding:12px;border-radius:16px;background:rgba(255,255,255,.06)}
+#mp{width:72px;height:108px;border-radius:8px;flex-shrink:0}
+#mt{font-size:17px;font-weight:600}#mm{color:#9a9a9a;font-size:13px;margin:2px 0 8px}
+#st{display:flex;gap:2px;font-size:30px;line-height:1}
+#st i{font-style:normal;color:#555;cursor:pointer}#st i:before{content:"★"}
+#st i.f{color:var(--ac)}#st i.h{background:linear-gradient(90deg,var(--ac) 50%,#555 50%);-webkit-background-clip:text;background-clip:text;color:transparent}
+#rl{color:#9a9a9a;font-size:13px;margin-top:4px}
+#cv{display:block;width:64%;margin:22px auto 0;border-radius:14px;background:#000}
+.bar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;padding:26px 16px calc(env(safe-area-inset-bottom) + 14px);background:linear-gradient(transparent,var(--b2) 45%);max-width:520px;margin:auto}
+.bar button{flex:1;padding:14px}
+#ps{position:fixed;inset:0;z-index:10;overflow-y:auto;background:linear-gradient(180deg,var(--b1),var(--b2));transform:translateX(100%);transition:transform .22s ease}
+#ps.o{transform:none}#ps .in{max-width:520px;margin:auto;padding:0 16px 40px}
+.g{background:rgba(255,255,255,.06);border-radius:16px;padding:6px 14px}
+.g label{display:block;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}.g label:last-child{border:0}
+.g label span{display:block;color:#9a9a9a;font-size:12px;margin-bottom:4px}
+.g input{background:none;padding:2px 0;border-radius:0}
+.n{color:#8a8a8a;font-size:12px;margin:6px 4px 0}
+</style></head><body>
+<header><h1>Letterboxd S</h1><button id="gs">Ajustes</button></header>
+<main>
+<div class="sb"><input id="q" placeholder="Pega un enlace de Letterboxd o busca"><button id="go">Cargar</button></div>
+<div id="msg"></div><div id="res"></div>
+<section id="mv" hidden><canvas id="mp" width="120" height="180"></canvas><div><div id="mt"></div><div id="mm"></div><div id="st"><i></i><i></i><i></i><i></i><i></i></div><div id="rl"></div></div></section>
+<h3>Diseño</h3><div class="r sc" id="ds"></div>
+<h3>Color</h3><div class="r sc" id="th"></div>
+<h3>Datos</h3><div class="r" id="fl"></div>
+<canvas id="cv"></canvas>
+</main>
+<nav class="bar"><button id="sv">Guardar imagen</button><button id="sh" class="p">Compartir</button></nav>
+<section id="ps"><header><button id="bk">‹ Atrás</button><h1>Ajustes</h1></header><div class="in">
+<h3>Letterboxd</h3><div class="g"><label><span>Tu usuario</span><input id="u" placeholder="usuario" autocapitalize="none"></label></div>
+<h3>Conexiones</h3><div class="g"><label><span>Clave de TMDB</span><input id="k" placeholder="Pega tu clave"></label><label><span>URL del Worker</span><input id="w" placeholder="https://…workers.dev"></label></div>
+<p class="n">El Worker lee Letterboxd y TMDB por ti.</p>
+<h3>Color de la app</h3><div class="r" id="cc"></div>
+<div class="sb" style="margin-top:22px"><button id="sa" style="flex:1;padding:14px">Guardar ajustes</button></div>
+</div></section>
+<script>
+const $=s=>document.querySelector(s),W=1080,H=1920,c=$('#cv').getContext('2d');
+$('#cv').width=W;$('#cv').height=H;
+let S=JSON.parse(localStorage.s||'{}'),F={rating:0},on={dir:1,yr:1,run:1,gen:1,date:1,rewatch:1,review:1,user:1},di=0,ti=0;
+const TH=[['Oscuro','#14181c','#fff','#9ab','#00e054','#1f2830'],['Crema','#f4efe6','#2b2b2b','#6b6254','#b45309','#fbf3df'],['Azul','#1f2a44','#fff','#9fb0d0','#f5c26b','#2a3a5c'],['Rojo','#2a1216','#fff','#c9a0a6','#ff6b6b','#3a1a20']];
+const DN=['Póster','Minimal','Ticket','Reseña','Nota grande','Cine','Polaroid'];
+const FK=[['dir','Director'],['yr','Año'],['run','Duración'],['gen','Géneros'],['cast','Reparto'],['tag','Eslogan'],['date','Fecha'],['rewatch','Revisionado'],['review','Reseña'],['user','Usuario']];
+const P=u=>S.w+'?url='+encodeURIComponent(u),gj=async u=>(await fetch(P(u))).json();
+const T=p=>{if(!S.k)throw'Añade tu clave de TMDB en Ajustes';return gj('https://api.themoviedb.org/3'+p+(p.includes('?')?'&':'?')+'api_key='+S.k+'&language=es-ES')};
+const img=async u=>createImageBitmap(await(await fetch(P(u))).blob());
+async function det(id){const d=await T('/movie/'+id+'?append_to_response=credits');
+Object.assign(F,{title:d.title,year:(d.release_date||'').slice(0,4),run:d.runtime||'',tag:d.tagline||'',gen:d.genres.slice(0,3).map(g=>g.name).join(' · '),dir:d.credits.crew.filter(x=>x.job=='Director').map(x=>x.name).join(', '),cast:d.credits.cast.slice(0,3).map(x=>x.name).join(', ')});
+if(d.poster_path)F.poster=await img('https://image.tmdb.org/t/p/w780'+d.poster_path)}
+async function link(u){
+if(/boxd\.it/.test(u))u=(await fetch(P(u))).headers.get('x-final-url')||u;
+const m=u.match(/film\/([^\/?#]+)/);if(!m)throw'Enlace no válido';
+F={rating:0,user:S.user};let id,it;
+if(S.user){const x=new DOMParser().parseFromString(await(await fetch(P('https://letterboxd.com/'+S.user+'/rss/'))).text(),'text/xml');
+it=[...x.querySelectorAll('item')].find(i=>(i.querySelector('link')?.textContent||'').includes('/film/'+m[1]+'/'))}
+if(it){const g=n=>it.getElementsByTagName(n)[0]?.textContent||'';
+const h=new DOMParser().parseFromString(g('description'),'text/html');
+Object.assign(F,{rating:+g('letterboxd:memberRating'),date:g('letterboxd:watchedDate'),re:g('letterboxd:rewatch')=='Yes',title:g('letterboxd:filmTitle'),year:g('letterboxd:filmYear'),review:[...h.querySelectorAll('p')].map(p=>p.textContent.trim()).filter(t=>t&&!/^Watched on/.test(t)).join(' ')});
+id=g('tmdb:movieId');const s=h.querySelector('img')?.src;if(s)try{F.poster=await img(s)}catch{}}
+else $('#msg').dataset.n='No está en tu actividad reciente: pon la nota a mano.';
+if(S.k){if(!id)id=(await T('/search/movie?query='+encodeURIComponent(m[1].replace(/-/g,' ')))).results?.[0]?.id;if(id)await det(id)}}
+async function find(q){const r=(await T('/search/movie?query='+encodeURIComponent(q))).results.slice(0,6);
+r.forEach(m=>{const b=document.createElement('button');b.textContent=m.title+' ('+(m.release_date||'').slice(0,4)+')';
+b.onclick=async()=>{$('#res').innerHTML='';F={rating:0,user:S.user};await det(m.id);ui();draw()};$('#res').append(b)})}
+$('#go').onclick=async()=>{const q=$('#q').value.trim();if(!q)return;$('#msg').dataset.n='';$('#msg').textContent='Cargando…';$('#res').innerHTML='';
+try{if(!S.w)throw'Añade la URL del Worker en Ajustes';
+if(/^https?:|boxd\.it/.test(q)){await link(q);ui();draw()}else await find(q);$('#msg').textContent=$('#msg').dataset.n||''}
+catch(e){$('#msg').textContent='Error: '+e}};
+function chips(id,arr,get,set){const e=$(id);e.innerHTML='';arr.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.className=get(i)?'on':'';b.onclick=()=>{set(i);chips(id,arr,get,set);draw()};e.append(b)})}
+const stars=r=>'★'.repeat(Math.floor(r))+(r%1?'½':'');
+function ui(){$('#rl').textContent=F.rating?String(F.rating):'Sin nota';document.querySelectorAll('#st i').forEach((e,i)=>{const v=(F.rating||0)-i;e.className=v>=1?'f':v>=.5?'h':''});$('#mv').hidden=!F.title;$('#mt').textContent=F.title||'';$('#mm').textContent=[F.year,F.dir].filter(Boolean).join(' · ');const t=$('#mp').getContext('2d');t.fillStyle='#333';t.fillRect(0,0,120,180);if(F.poster)t.drawImage(F.poster,0,0,120,180)}
+$('#st').onclick=e=>{const i=e.target.closest('i');if(!i)return;const n=[...i.parentNode.children].indexOf(i)+(e.offsetX<i.offsetWidth/2?.5:1);F.rating=F.rating==n?0:n;ui();draw()};
+function tx(t,x,y,s,col,o={}){c.font=`${o.w||400} ${s}px ${o.f||'system-ui,sans-serif'}`;c.fillStyle=col;c.textAlign=o.a||'left';
+if(!o.m){c.fillText(t,x,y);return y+s*1.3}
+let l='',yy=y;for(const w of String(t).split(/\s+/)){const q=l?l+' '+w:w;if(c.measureText(q).width>o.m&&l){c.fillText(l,x,yy);yy+=s*1.3;l=w}else l=q}
+c.fillText(l,x,yy);return yy+s*1.3}
+const st=(x,y,s,col,a)=>tx(stars(F.rating),x,y,s,col,{a});
+function pst(x,y,w,h,r=16){c.save();c.beginPath();c.roundRect(x,y,w,h,r);c.clip();
+if(F.poster){const k=Math.max(w/F.poster.width,h/F.poster.height),pw=F.poster.width*k,ph=F.poster.height*k;c.drawImage(F.poster,x+(w-pw)/2,y+(h-ph)/2,pw,ph)}else{c.fillStyle='#456';c.fillRect(x,y,w,h)}c.restore()}
+const fd=d=>new Date(d+'T12:00').toLocaleDateString('es',{day:'numeric',month:'short',year:'numeric'});
+function meta(){const a=[],b=[];if(on.dir&&F.dir)a.push('Dir. '+F.dir);if(on.yr&&F.year)b.push(F.year);if(on.run&&F.run)b.push(F.run+' min');if(b.length)a.push(b.join(' · '));if(on.gen&&F.gen)a.push(F.gen);if(on.cast&&F.cast)a.push(F.cast);if(on.tag&&F.tag)a.push(F.tag);return a}
+function foot(){const a=[];if(on.date&&F.date)a.push('Visto el '+fd(F.date));if(on.rewatch&&F.re)a.push('Revisionado');if(on.user&&F.user)a.push('@'+F.user);return a.join(' · ')}
+function draw(){const[,bg,fg,mu,ac,cd]=TH[ti],M=meta(),fo=foot(),ttl=F.title||'Título de la película',SR='Georgia,serif';
+const Rv=on.review&&F.review?'“'+F.review.slice(0,260)+(F.review.length>260?'…':'')+'”':'';
+const ln=(x,y,s,a,col,m)=>{M.forEach(l=>y=tx(l,x,y,s,col,{a,m}));return y};
+c.clearRect(0,0,W,H);c.fillStyle=bg;c.fillRect(0,0,W,H);let y;
+if(di==0){pst(180,100,720,1080,24);y=tx(ttl,540,1290,72,fg,{w:500,a:'center',m:900});y=ln(540,y,40,'center',mu,900);st(540,y+60,90,ac,'center');tx(fo,540,1850,32,mu,{a:'center'})}
+if(di==1){pst(260,160,560,840,6);y=tx(ttl,540,1130,80,fg,{f:SR,a:'center',m:860});c.fillStyle=fg;c.fillRect(510,y-20,60,3);y=ln(540,y+40,38,'center',mu,860);st(540,Math.max(y+60,1600),100,ac,'center');tx(fo,540,1850,32,mu,{a:'center'})}
+if(di==2){c.fillStyle=ac;c.fillRect(0,0,W,H);c.fillStyle=cd;c.beginPath();c.roundRect(90,300,900,1320,36);c.fill();
+tx('Una entrada',150,400,36,mu);pst(150,440,330,495,12);y=tx(ttl,520,500,56,fg,{w:500,m:420});ln(520,y,32,'left',mu,420);
+c.setLineDash([16,12]);c.strokeStyle=mu;c.lineWidth=3;c.beginPath();c.moveTo(130,1040);c.lineTo(950,1040);c.stroke();c.setLineDash([]);
+tx('Mi nota',150,1130,38,mu);tx(F.rating?String(F.rating):'–',150,1330,200,fg,{w:500});st(150,1450,80,ac);tx(fo,150,1560,30,mu)}
+if(di==3){pst(90,120,230,345,10);y=tx(ttl,350,200,60,fg,{w:500,m:640});ln(350,y,34,'left',mu,640);
+tx(Rv||(on.tag&&F.tag?F.tag:''),90,640,56,fg,{f:SR,m:900});st(90,1640,90,ac);tx(fo,90,1790,32,mu)}
+if(di==4){tx('Mi nota',90,200,48,mu);tx(F.rating?String(F.rating):'–',90,640,420,fg,{w:500});st(90,790,110,ac);
+pst(90,1380,260,390,12);y=tx(ttl,390,1450,56,fg,{w:500,m:600});ln(390,y,34,'left',mu,600);tx(fo,90,1850,32,mu)}
+if(di==5){pst(0,0,W,H,0);c.fillStyle='rgba(0,0,0,.84)';c.fillRect(0,1240,W,680);y=tx(ttl,90,1350,76,'#fff',{w:500,m:900});y=ln(90,y,38,'left','#cde',900);st(90,y+50,90,ac);tx(fo,90,1850,32,'#cde')}
+if(di==6){c.save();c.translate(540,900);c.rotate(-.03);c.fillStyle='#fbfaf7';c.fillRect(-400,-720,800,1340);pst(-360,-680,720,900,2);
+y=tx(ttl,0,330,64,'#2b2b2b',{f:SR,a:'center',m:700});st(0,y+30,90,ac,'center');ln(0,y+130,34,'center','#6b6254',700);c.restore();tx(fo,540,1850,32,mu,{a:'center'})}}
+chips('#ds',DN,i=>i==di,i=>di=i);chips('#th',TH.map(t=>t[0]),i=>i==ti,i=>ti=i);
+chips('#fl',FK.map(k=>k[1]),i=>on[FK[i][0]],i=>on[FK[i][0]]=!on[FK[i][0]]);
+const blob=()=>new Promise(r=>$('#cv').toBlob(r,'image/png'));
+const sv=async()=>{const a=document.createElement('a');a.href=URL.createObjectURL(await blob());a.download='historia.png';a.click()};
+$('#sv').onclick=sv;
+$('#sh').onclick=async()=>{const f=new File([await blob()],'historia.png',{type:'image/png'});navigator.canShare?.({files:[f]})?navigator.share({files:[f]}).catch(()=>{}):sv()};
+$('#sa').onclick=()=>{S={c:S.c,user:$('#u').value.trim().replace('@',''),k:$('#k').value.trim(),w:$('#w').value.trim()};localStorage.s=JSON.stringify(S);F.user=S.user;draw();back()};
+const ps=$('#ps'),closeS=()=>ps.classList.remove('o'),back=()=>history.state&&history.state.s?history.back():closeS(),openS=()=>{ps.classList.add('o');history.pushState({s:1},'')};
+addEventListener('popstate',closeS);$('#gs').onclick=openS;$('#bk').onclick=back;
+const AC=[['Gris','#0b0b0b','#2b2d30','#e6e6e6'],['Verde','#06120b','#17382a','#4ade80'],['Azul','#070d1a','#1b2f55','#60a5fa'],['Rojo','#140808','#4a1c22','#f87171']];
+const applyC=()=>{const a=AC[S.c||0],r=document.documentElement.style;r.setProperty('--b1',a[1]);r.setProperty('--b2',a[2]);r.setProperty('--ac',a[3]);document.querySelector('meta[name=theme-color]').content=a[1]};
+applyC();chips('#cc',AC.map(a=>a[0]),i=>(S.c||0)==i,i=>{S.c=i;localStorage.s=JSON.stringify(S);applyC()});
+$('#u').value=S.user||'';$('#k').value=S.k||'';$('#w').value=S.w||'';if(!S.w)openS();
+F.user=S.user;ui();draw();
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+</script></body></html>
